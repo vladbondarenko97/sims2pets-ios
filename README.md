@@ -1,195 +1,88 @@
-# ModernGekko-Template
+# The Sims 2: Pets for iPhone, iPad and Mac
 
-A template for building a static-recompilation pipeline for GameCube and Wii games, built on:
+A native port of **The Sims 2: Pets** (GameCube, USA, `G4OE69`) to iOS and macOS. The game's PowerPC code is statically recompiled to C ([DolRecomp](https://github.com/ExpansionPak/DolRecomp)) and runs on [ModernGekko](https://github.com/ExpansionPak/ModernGekko), a Dolphin-derived runtime. There is no emulator JIT, so it runs on an iPhone without a jailbreak.
 
-- [DolRecomp](https://github.com/ExpansionPak/DolRecomp) - static recompiler that turns a GameCube/Wii DOL into portable C or optimized native LLVM objects.
-- [ModernGekko](https://github.com/ExpansionPak/ModernGekko) - the runtime the recompiled C links against (built on a Dolphin-derived core for video/audio/HLE).
+**No game is included.** You build it from your own copy of the disc, and what you build contains the game's code and data: keep it to yourself.
 
-Both are pulled in as git submodules under `lib/`. Everything is handled through the top-level `Makefile`. This repo has no game-specific code of its own, so it's a starting point for standing up a recompilation project for any GameCube or Wii title you own.
+## What this fork adds
 
-## Using This Template
+- **iOS host**: Metal, AudioUnit sound, iOS 15+, no JIT anywhere (software vertex loader, interpreter fallback).
+- **Touch controls** ([touchkit](https://github.com/vladbondarenko97/touchkit)): on-screen pad, stick and triggers that you can drag, resize and hide; 3 layouts; a hide-all ghost mode.
+- **Tap to point**: tap a house, a menu item or an object, and the game's cursor goes there and clicks. A relative "touchpad" mode is also available; an on-screen button switches between them.
+- **Pinch to zoom**, two-finger pan, **Bluetooth keyboard** (WASD walk, arrows rotate/zoom, Space = A, Esc = Start) and game controllers.
+- **⚙ settings**: quality preset, internal resolution up to 4x, MSAA/SSAA, anisotropic filtering, widescreen hack, shader mode, emulated CPU speed, volume, audio buffer, intro movies on/off.
+- **Speed**: the game's idle loop is skipped (60 fps at about half the CPU). Code the game rewrites at boot is recompiled already patched (`Data/Sys/GameSettings/G4OE69.ini`), so the intro no longer drops to the interpreter.
+- **Intro skip** (the game's own `-nomovies` switch), on by default, plus an optional slim disc without the intro movies (~600 MB).
+- **Cloud saves** (optional): sign in to a save server in ⚙ (iOS) or at first launch (Mac), and the memory card follows you across devices.
+- **Mac app**: universal (Apple silicon and Intel).
 
-Click **Use this template** on GitHub (or fork/clone it directly) to create your own project repo. Nothing in the `Makefile` or submodule setup needs to change to point it at a different game, just pass a different `ISO=` the first time you run it. Rename the repo to whatever fits your project.
+## Build (a Mac with Xcode 15+)
 
-## Dependencies
-
-CMake, Ninja, and pkg-config, plus a C11/C++23 toolchain. DolRecomp and ModernGekko both build on macOS, Linux, and Windows; this repo's `Makefile` doesn't do anything platform-specific itself, it just drives the same CMake builds each submodule supports natively. `TOOLCHAIN` (see below) follows the compiler used to build ModernGekko.
-
-### Linux
-
-Ubuntu/Debian, matching what `lib/ModernGekko/vendor/dolphin`'s own CI installs for its NoGUI build (`.github/workflows/build.yml`):
-
-```
-sudo apt-get install -y ninja-build build-essential pkg-config cmake \
-  libevdev-dev libudev-dev libgtk-3-dev libsystemd-dev \
-  libbluetooth-dev libasound2-dev libpulse-dev libgl1-mesa-dev \
-  libxrandr-dev libxi-dev
-```
-
-`build-essential` pulls in GCC, the default toolchain on Linux.
-
-### macOS
-
-Via Homebrew:
-
-```
+```sh
 brew install cmake ninja pkg-config
+git clone --recursive https://github.com/vladbondarenko97/sims2pets-ios
+cd sims2pets-ios
+scripts/build_ios.sh "/path/to/The Sims 2 - Pets (USA).rvz" --slim
 ```
 
-Xcode's command line tools are also required (AppleClang 14.0.3+; verified on AppleClang 17).
+Your disc can be `.iso`, `.gcm` or `.rvz` (Dolphin's compressed format). The first run takes a while: recompiling the game takes about 30 minutes. You get:
 
-### Windows
+- `build/ios/Sims2Pets.ipa`: the app.
+- `build/ios/game/`: the game data for the device (`sys/`, `disc.rvz`).
 
-Visual Studio 2022 (or the standalone Build Tools) with the "Desktop development with C++" workload, for the MSVC toolchain, plus CMake and Ninja on `PATH` (installable via winget/Chocolatey or their own installers). No external package manager is needed beyond that. Dolphin's Windows dependency tree (FFmpeg, SDL, etc.) is vendored as prebuilt binaries/source under `lib/ModernGekko/vendor/dolphin/Externals/`, unlike Linux where system `-dev` packages are expected.
+Options:
 
-## Getting the Source
+- `--slim` writes the device's copy of the disc without the intro movies. It needs "Intro movies: Skip", the default.
+- `--with-game` puts the game inside the IPA, so there is nothing to copy afterwards (a ~600 MB IPA).
 
-```
-git clone --recurse-submodules https://github.com/<your-org>/<your-repo>.git
-cd <your-repo>
-```
+### Install
 
-If you already cloned without `--recurse-submodules`, `make` will fetch them for you on first run. To do it manually instead:
+- **SideStore / AltStore** (no jailbreak; with a free Apple ID you re-sign every 7 days): install the IPA. Free accounts can't use the extended memory entitlements; the game still runs.
+- **TrollStore**: install the IPA as is.
 
-```
-git submodule update --init --recursive
-```
+Then, unless you used `--with-game`, copy the game in:
 
-Run the build check at any time with:
+- **Finder**: connect the device, open it in Finder → Files → Sims 2 Pets, and drag `build/ios/game` in. The folder must be named `game`.
+- **Files app**: On My iPhone → Sims 2 Pets.
+- **Jailbroken devices with OpenSSH**: `scripts/ios/push_game.sh`.
 
-```
-make check
-```
+Game data stays when the app is updated.
 
-It verifies CMake, Ninja, Git, Python, working C11/C++23 compilers, and a
-64-bit target with 8-byte pointers. If the source submodules are absent, it
-offers to fetch them. Use `make check FETCH=1` for a non-interactive fetch,
-or `make check BACKEND=llvm` to validate LLVM 19/20 as well.
+### Mac
 
-> [!NOTE]
-> `lib/ModernGekko` vendors a large chunk of Dolphin's dependency tree (SDL, fmt, imgui, Vulkan headers, etc.), so the first submodule sync takes a while and pulls a few hundred MB.
-
-## Recompile and Run
-
-Bring your own legally-owned ISO, no game data is included in or downloaded by this repository. Works with any GameCube or Wii disc; there is no default game, so `ISO=` (or an already-extracted `GAME=`) is required. Point `ISO` at a dump and run:
-
-```
-make run ISO=/path/to/Your\ Game.iso
+```sh
+scripts/build_module.sh mac
+scripts/macos/make_app.sh       # OUT=/some/folder to choose where
 ```
 
-This builds DolRecomp and ModernGekko, extracts the ISO, recompiles `main.dol` to C, compiles the result into a native module, and launches the game in a window.
+## Controls
 
-For the optimized LLVM backend:
+| | Touch | Keyboard |
+|---|---|---|
+| Move cursor / walk | tap (point mode) or drag (touchpad mode), left stick | WASD |
+| Select | tap, A | Space, Enter, E |
+| Back | B | Backspace, Q |
+| Rotate / zoom camera | right stick, pinch | arrows, `,` `.` `-` `=` |
+| Pause menu | START | Esc, P |
 
-```
-make llvm-run ISO=/path/to/Your\ Game.iso
-```
+## Cloud saves
 
-`make llvm` builds the module without launching it. DolRecomp emits native
-objects, and RecompCore's module template discovers the generated object
-manifest and links every object into the game module automatically. LLVM is
-only needed while building; the resulting game module has no LLVM runtime
-dependency.
+Host your own with `server/saves_server.py` (Python 3, nothing to install):
 
-Each game gets its own directory under `extracted/<slug>/`, where `<slug>` is derived from the ISO's filename, so multiple games coexist without clobbering each other. `ISO` is only needed the first time per game, once extracted, run it again by slug instead:
-
-```
-make run ISO=iso/Your\ Game.iso        # first time for a new game
-make run GAME=Your-Game-Slug           # afterwards
+```sh
+python3 server/saves_server.py --add-device ipad    # prints the device's password
+python3 server/saves_server.py 8805                 # put HTTPS in front of it (Caddy, a tunnel, ...)
 ```
 
-Drop ISOs under `iso/` at the repo root (gitignored) for a stable local path.
+Then sign in on each device with the server's address, the device name and its password. The client (`lib/ModernGekko/src/ios/save_sync.mm`) speaks a small HTTP API, and any server that implements it works:
 
-To just build the tools without touching a game, or to produce the compiled module without launching it:
+- Basic auth (device name + password) on every request.
+- `GET /v1/sims2pets/` → `{"<file>": {"mtime": <unix>, "sha256": "<hex>"}, ...}`
+- `GET /v1/sims2pets/<file>` → the file, with its time in `X-Mtime`.
+- `PUT /v1/sims2pets/<file>` with `X-Mtime: <unix>` → 200, or 409 when the server's copy is newer.
 
-```
-make tools
-make recompile ISO=/path/to/game.iso
-```
+## Credits
 
-`moderngekko-port` caches compiled modules by DOL hash and toolchain identity, so re-running `recompile`/`run` after the first build is cheap, it hits cache instead of recompiling.
+[ModernGekko](https://github.com/ExpansionPak/ModernGekko), [DolRecomp](https://github.com/ExpansionPak/DolRecomp) and [ModernGekko-Template](https://github.com/ExpansionPak/ModernGekko-Template) (its original README is `TEMPLATE_README.md`) by ExpansionPak; [Dolphin](https://dolphin-emu.org). ModernGekko and Dolphin are GPL, and so are this fork's changes to them.
 
-> [!NOTE]
-> Wii ISOs need [Wiimms ISO Tools](https://wit.wiimm.de/) (`wit`) for extraction, `make` downloads it automatically into `extern/wit` on first use. GameCube extraction is built into DolRecomp directly and doesn't need this.
-
-## Makefile Targets
-
-Run `make help` (or just `make`, the default target) for this list:
-
-| Target       | Description                                                |
-|--------------|--------------------------------------------------------------|
-| `check`      | Validate build tools, compilers, architecture, and sources  |
-| `tools`      | Build DolRecomp and ModernGekko                             |
-| `extract`    | Extract a GameCube/Wii ISO into `extracted/<slug>/`         |
-| `recompile`  | Recompile + compile a runnable module                       |
-| `run`        | Recompile (if needed) and launch the game                   |
-| `llvm`       | Build an optimized LLVM object module                       |
-| `llvm-run`   | Build an LLVM object module and launch the game             |
-| `clean`      | Remove all build output                                     |
-
-## Variables
-
-| Variable           | Default                                    | Description                                              |
-|--------------------|--------------------------------------------|----------------------------------------------------------|
-| `ISO`              | *(none)*                                   | Path to a game ISO. Required the first time per game, also determines that game's slug. |
-| `GAME`             | *(none)*                                   | Select an already-extracted game by slug instead of `ISO=`. Required if `ISO` isn't given. |
-| `JOBS`             | detected CPU count                         | Parallel build jobs passed to CMake/Ninja.                |
-| `CMAKE_BUILD_TYPE` | `Release`                                  | Passed to both submodule builds.                          |
-| `BUILD_TESTING`    | `OFF`                                      | Build developer test targets alongside production tools. |
-| `BACKEND`          | `c`                                        | Generated-code backend: `c` or `llvm`.                    |
-| `LLVM_DIR`         | *(CMake discovery)*                        | Optional path to LLVM 19/20's CMake package.              |
-| `RUN_ARGS`         | *(empty)*                                  | Extra flags forwarded to `moderngekko-run` via `make run`, e.g. `--headless`, `--graphics Vulkan`. |
-| `TOOLCHAIN`        | `auto`                                      | Compiler for the per-game module: `auto`, `clang`, `gcc`, or `msvc`. See "Toolchain" below. |
-
-For example, to force a debug build with extra runner flags:
-
-```
-CMAKE_BUILD_TYPE=Debug make run ISO=/path/to/game.iso RUN_ARGS="--headless"
-```
-
-## LLVM Backend
-
-DolRecomp supports LLVM 19 and 20. If it is installed outside CMake's normal
-search path, point the template at its package directory:
-
-```
-make llvm GAME=Your-Game-Slug LLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm
-make llvm-run GAME=Your-Game-Slug LLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm
-```
-
-The portable C backend remains the default and is always available:
-
-```
-make recompile GAME=Your-Game-Slug BACKEND=c
-```
-
-## Toolchain
-
-The default `TOOLCHAIN=auto` follows the compiler used to build `moderngekko-port`.
-This keeps an MSVC build on MSVC and an MSYS2/MinGW build on GCC or Clang instead
-of assuming that Visual Studio's `cl` is available.
-
-Override it either way with `TOOLCHAIN=`:
-
-```
-make run ISO=/path/to/game.iso TOOLCHAIN=clang   # try clang on Linux anyway
-make run ISO=/path/to/game.iso TOOLCHAIN=auto    # let moderngekko-port pick
-```
-
-Module builds are cached by DOL hash *and* toolchain identity, so switching `TOOLCHAIN` between runs produces a separate cache entry rather than clobbering a previous build.
-
-## Controller Input
-
-ModernGekko has no in-app controller configuration UI (same as Dolphin's NoGUI frontend it's built on), bindings come from `Config/GCPadNew.ini` / `Config/WiimoteNew.ini` in ModernGekko's user directory (`~/.local/share/moderngekko/Config/` by default), which nothing in this pipeline creates for you. Without one, GameCube pad input silently does nothing. You'll need to hand-author or copy in a working ini, Dolphin's ini format and key names are stable and documented by the project itself.
-
-## Cleaning Up
-
-```
-make clean           # everything below
-make clean-extracted # extracted disc + compiled modules only, keeps built tools
-make clean-tools     # DolRecomp/ModernGekko build trees only
-```
-
-## License
-
-DolRecomp and ModernGekko are each distributed under their own upstream licenses (see `lib/DolRecomp/LICENSE` and `lib/ModernGekko/LICENSE`, the latter GPL-3.0-or-later due to its Dolphin-derived runtime). No Nintendo disc image, extracted game data, keys, or copyrighted assets are part of this repository, bring your own legally-owned dump.
+The Sims is a trademark of Electronic Arts. This project is not affiliated with or endorsed by EA, Maxis or Nintendo.

@@ -12,3 +12,5 @@ CMakeUserPresets.json
 # OS
 .DS_Store
 Thumbs.db
+scripts/ios/local.env
+scripts/ios/icon.local.png
