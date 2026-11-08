@@ -17,7 +17,7 @@ for A in arm64 x86_64; do
     if [ ! -x "$MG/build-mac-$A/moderngekko-run" ]; then
         TOOLCHAIN=()
         [ "$A" = x86_64 ] && [ "$(uname -m)" = arm64 ] && TOOLCHAIN=(-DCMAKE_TOOLCHAIN_FILE="$MG/macos-x86_64.cmake")
-        cmake -S "$MG" -B "$MG/build-mac-$A" -G Ninja "${TOOLCHAIN[@]}" -DCMAKE_BUILD_TYPE=Release \
+        cmake -S "$MG" -B "$MG/build-mac-$A" -G Ninja ${TOOLCHAIN[@]+"${TOOLCHAIN[@]}"} -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_OSX_ARCHITECTURES=$A -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DUSE_SYSTEM_LIBS=OFF -DBUNDLE_SPEEX=ON \
             -DENABLE_VULKAN=OFF -DENABLE_QT=OFF -DMACOS_CODE_SIGNING=OFF -DUSE_SANITIZERS=OFF \
             -DCMAKE_IGNORE_PREFIX_PATH=/opt/homebrew -DHAVE_PIPE2=OFF >/dev/null
