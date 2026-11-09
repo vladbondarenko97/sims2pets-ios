@@ -33,7 +33,8 @@ ios)
     echo "$OUT/gG4OE69_recomp.a" ;;
 mac)
     cmake -S "$SRC/module-template" -B "$OUT" "${COMMON[@]}" -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
-        -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DRECOMPCORE_MODULE_LIBRARY_TYPE=SHARED >/dev/null
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DRECOMPCORE_MODULE_LIBRARY_TYPE=SHARED \
+        -DCMAKE_C_FLAGS="${MODULE_CFLAGS-$FAST_CFLAGS}" >/dev/null
     ninja -C "$OUT"
     echo "$OUT/gG4OE69_recomp.dylib ($(lipo -archs "$OUT/gG4OE69_recomp.dylib"))" ;;
 *) echo "usage: build_module.sh ios|mac" >&2; exit 1 ;;
