@@ -28,8 +28,13 @@ for fw in AVFoundation AudioToolbox CoreAudio CoreFoundation CoreGraphics CoreMo
 done
 "${CXX[@]}" -o "$P/Sims2Pets" "$OUT/main.o" -Wl,-force_load,"$B/libmoderngekko.a" \
     "$ROOT/build/ios-module/gG4OE69_recomp.a" "${LIBS[@]}" "${FRAMEWORKS[@]}" -lz -liconv -lbz2 -lresolv \
-    -Wl,-dead_strip
+    -Wl,-dead_strip -Wl,-U,___llvm_profile_write_file -Wl,-U,___llvm_profile_set_filename \
+    -Wl,-U,___llvm_profile_reset_counters ${IPA_LDFLAGS:-}
 sed "s/BUNDLE_ID/$BUNDLE_ID/" "$ROOT/scripts/ios/Info.plist" > "$P/Info.plist"
+# Build stamp, shown at launch (PlatformIOS.mm) so the installed build is easy to tell apart.
+STAMP="$(date '+%b %-d %H:%M') · $(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo local)"
+plutil -replace CFBundleVersion -string "$(date +%Y%m%d.%H%M)" "$P/Info.plist"
+plutil -insert MGBuildStamp -string "$STAMP" "$P/Info.plist"
 cp -R "$MG/vendor/dolphin/Data/Sys" "$P/Sys"
 [ -n "${GAME_DIR:-}" ] && cp -R "$GAME_DIR" "$P/game"
 # The icon (scripts/ios/icon.png; icon.local.png, not in git, wins), in the sizes iOS looks for.
