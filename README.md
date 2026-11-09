@@ -2,6 +2,8 @@
 
 A native port of **The Sims 2: Pets** (GameCube, USA, `G4OE69`) to iOS and macOS. The game's PowerPC code is statically recompiled to C ([DolRecomp](https://github.com/ExpansionPak/DolRecomp)) and runs on [ModernGekko](https://github.com/ExpansionPak/ModernGekko), a Dolphin-derived runtime. There is no emulator JIT, so it runs on an iPhone without a jailbreak.
 
+![The Sims 2: Pets on an iPad Air with the on-screen controls](docs/ipad.jpg)
+
 **No game is included.** You build it from your own copy of the disc, and what you build contains the game's code and data: keep it to yourself.
 
 ## What this fork adds
@@ -10,8 +12,8 @@ A native port of **The Sims 2: Pets** (GameCube, USA, `G4OE69`) to iOS and macOS
 - **Touch controls** ([touchkit](https://github.com/vladbondarenko97/touchkit)): on-screen pad, stick and triggers that you can drag, resize and hide; 3 layouts; a hide-all ghost mode.
 - **Tap to point**: tap a house, a menu item or an object, and the game's cursor goes there and clicks. A relative "touchpad" mode is also available; an on-screen button switches between them.
 - **Pinch to zoom**, two-finger pan, **Bluetooth keyboard** (WASD walk, arrows rotate/zoom, Space = A, Esc = Start) and game controllers.
-- **⚙ settings**: quality preset, internal resolution up to 4x, MSAA/SSAA, anisotropic filtering, widescreen hack, shader mode, emulated CPU speed, volume, audio buffer, intro movies on/off.
-- **Speed**: the game's idle loop is skipped (60 fps at about half the CPU). Code the game rewrites at boot is recompiled already patched (`Data/Sys/GameSettings/G4OE69.ini`), so the intro no longer drops to the interpreter.
+- **⚙ settings**: quality preset, internal resolution up to 4x, MSAA/SSAA, anisotropic filtering, widescreen hack, shader mode, volume, audio buffer, intro movies on/off.
+- **Speed**: the game's idle loop is skipped (60 fps at about half the CPU). Cache-flush loops and calls between code chunks run without returning to the dispatcher (about 60% fewer round trips in a lot). Code the game rewrites at boot is recompiled already patched (`Data/Sys/GameSettings/G4OE69.ini`), so the intro no longer drops to the interpreter.
 - **Intro skip** (the game's own `-nomovies` switch), on by default, plus an optional slim disc without the intro movies (~600 MB).
 - **Cloud saves** (optional): sign in to a save server in ⚙ (iOS) or at first launch (Mac), and the memory card follows you across devices.
 - **Mac app**: universal (Apple silicon and Intel).
